@@ -10,4 +10,4 @@
 3）整合flume到kafka </br>
 4）整合kafka到spark streaming </br>
 5）spark streaming对接收到的数据进行处理 </br>
-项目主要完成了实时流数据平台的构建以及需求的开发，从数据的产生到对接flume，再从flume对接到kafka，再从kafka对接到streaming，再按照需求进行开发。
+项目主要完成了实时流数据平台的构建以及需求的开发，从模拟数据的产生到对接flume，再从flume对接到kafka，再从kafka对接到streaming，再按照需求进行开发。
