@@ -1,0 +1,84 @@
+## 创建定时任务 脚本
+vim log_generator.sh 
+python /home/hadoop/data/project/generate_log.py
+
+## 每隔十秒产生一批日志
+crontab -e
+*/10 * * * * /home/hadoop/data/project/log_generator.sh
+
+
+## 1、对接Python日志产生器输出的日志到flume
+streaming_test.conf
+
+选型：access.log ==> 控制台输出（用于调试）
+source: exec
+channel: memory
+sink: logger
+
+exec-memory-logger.sources= exec-source
+exec-memory-logger.sinks=logger-sink
+exec-memory-logger.channels= memory-channel
+
+exec-memory-logger.sources.exec-source.type=exec
+exec-memory-logger.sources.exec-source.command=tail -F /Users/Mac/mydata/access.log
+exec-memory-logger.sources.exec-source.shell= /bin/sh -c
+
+exec-memory-logger.channels.memory-channel.type=memory
+
+exec-memory-logger.sinks.logger-sink.type=logger
+
+exec-memory-logger.sources.exec-source.channels=memory-channel
+exec-memory-logger.sinks.logger-sink.channel= memory-channel
+	
+    flume-ng agent \
+    --conf $FLUME_HOME/conf \
+    --conf-file $FLUME_HOME/conf/streaming_test.conf \
+    --name exec-memory-logger \
+    -Dflume.root.logger=INFO,console
+
+
+
+
+## 2、日志 ==》flume ==》kafka
+    启动zookeeper：zkServer.sh start
+    启动kafka：kafka-server-start.sh -daemon server.properties
+    修改flume配置文件: streaming_kafka.conf
+    
+exec-memory-kafka.sources= exec-source
+exec-memory-kafka.sinks=kafka-sink
+exec-memory-kafka.channels= memory-channel
+
+exec-memory-kafka.sources.exec-source.type=exec
+exec-memory-kafka.sources.exec-source.command=tail -F /Users/Mac/mydata/access.log
+exec-memory-kafka.sources.exec-source.shell= /bin/sh -c
+
+exec-memory-kafka.memory-channel.type=memory
+
+exec-memory-kafka.sinks.kafka-sink.type = org.apache.flume.sink.kafka.KafkaSink
+exec-memory-kafka.sinks.kafka-sink.brokerList=hadoop01:9092
+exec-memory-kafka.sinks.kafka-sink.topic=test_topic
+exec-memory-kafka.sinks.kafka-sink.batchSize=5
+exec-memory-kafka.sinks.kafka-sink.requireedAcks=1
+
+exec-memory-kafka.sources.exec-source.channels=memory-channel
+exec-memory-kafka.sinks.kafka-sink.channel= memory-channel	
+
+flume脚本：
+flume-ng agent \
+    --conf $FLUME_HOME/conf \
+    --conf-file $FLUME_HOME/conf/streaming_kafka.conf \
+    --name exec-memory-kafka \
+    -Dflume.root.logger=INFO,console
+    
+ 启动kafka消费者：
+ kafka-console-consumer.sh --zookeeper hadoop01:2181 --topic test_topic
+
+spark脚本：
+spark-submit \
+--class com.lihaogn.sparkProject.main.SparkStreamingApp \
+--master local[5] \
+--name SparkStreamingApp \
+--jars /Users/Mac/software/spark-streaming-kafka-0-8-assembly_2.11-2.2.0.jar, \
+	$(echo /Users/Mac/app/hbase-1.2.0-cdh5.7.0/lib/*.jar | tr ' ' ',') \
+	/Users/Mac/my-lib/Kafka-train-1.0.jar \
+localhost:2181 test test_topic 1
