@@ -1,0 +1,43 @@
+flume配置文件：streaming_flume.conf
+agent1.sources=avro-source
+agent1.channels=logger-channel
+agent1.sinks=log-sink
+
+#define source
+agent1.sources.avro-source.type=avro
+agent1.sources.avro-source.bind=localhost
+agent1.sources.avro-source.port=41414
+
+#define channel
+agent1.channels.logger-channel.type=memory
+
+#define sink
+agent1.sinks.log-sink.type=logger
+
+agent1.sources.avro-source.channels=logger-channel
+agent1.sinks.log-sink.channel=logger-channel
+
+
+
+kafka配置文件：streaming_kafka.conf
+agent1.sources=avro-source
+agent1.channels=logger-channel
+agent1.sinks=kafka-sink
+
+#define source
+agent1.sources.avro-source.type=avro
+agent1.sources.avro-source.bind=0.0.0.0
+agent1.sources.avro-source.port=41414
+
+#define channel
+agent1.channels.logger-channel.type=memory
+
+#define sink
+agent1.sinks.kafka-sink.type=org.apache.flume.sink.kafka.KafkaSink
+agent1.sinks.kafka-sink.topic=streamingtopic
+agent1.sinks.kafka-sink.brokerList=hadoop01:9092
+agent1.sinks.kafka-sink.requiredAcks=1
+agent1.sinks.kafka-sink.batchSize=20
+
+agent1.sources.avro-source.channels=logger-channel
+agent1.sinks.kafka-sink.channel=logger-channel
